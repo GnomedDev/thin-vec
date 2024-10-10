@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![deny(missing_docs, rust_2018_idioms)]
 
 //! `ThinVec` is exactly the same as `Vec`, except that it stores its `len` and `capacity` in the buffer
 //! it allocates.
