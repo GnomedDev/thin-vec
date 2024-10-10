@@ -211,7 +211,7 @@ mod impl_details {
 
     pub type SizeType = u32;
 
-    pub const MAX_CAP: usize = i32::max_value() as usize;
+    pub const MAX_CAP: usize = i32::MAX as usize;
 
     // Little endian: the auto bit is the high bit, and the capacity is
     // verbatim. So we just need to mask off the high bit. Note that
@@ -2670,6 +2670,7 @@ mod tests {
     #[cfg_attr(feature = "gecko-ffi", should_panic)]
     fn test_overaligned_type_is_rejected_for_gecko_ffi_mode() {
         #[repr(align(16))]
+        #[allow(dead_code)]
         struct Align16(u8);
 
         let v = ThinVec::<Align16>::new();
@@ -3024,7 +3025,6 @@ mod std_tests {
         string::{String, ToString},
     };
     use core::mem::size_of;
-    use core::usize;
 
     struct DropCounter<'a> {
         count: &'a mut u32,
@@ -3397,6 +3397,7 @@ mod std_tests {
     #[test]
     fn test_vec_truncate_drop() {
         static mut DROPS: u32 = 0;
+        #[allow(dead_code)]
         struct Elem(i32);
         impl Drop for Elem {
             fn drop(&mut self) {
@@ -3601,19 +3602,19 @@ mod std_tests {
     #[test]
     #[cfg(not(feature = "gecko-ffi"))]
     fn test_drain_max_vec_size() {
-        let mut v = ThinVec::<()>::with_capacity(usize::max_value());
+        let mut v = ThinVec::<()>::with_capacity(usize::MAX);
         unsafe {
-            v.set_len(usize::max_value());
+            v.set_len(usize::MAX);
         }
-        for _ in v.drain(usize::max_value() - 1..) {}
-        assert_eq!(v.len(), usize::max_value() - 1);
+        for _ in v.drain(usize::MAX - 1..) {}
+        assert_eq!(v.len(), usize::MAX - 1);
 
-        let mut v = ThinVec::<()>::with_capacity(usize::max_value());
+        let mut v = ThinVec::<()>::with_capacity(usize::MAX);
         unsafe {
-            v.set_len(usize::max_value());
+            v.set_len(usize::MAX);
         }
-        for _ in v.drain(usize::max_value() - 1..=usize::max_value() - 1) {}
-        assert_eq!(v.len(), usize::max_value() - 1);
+        for _ in v.drain(usize::MAX - 1..=usize::MAX - 1) {}
+        assert_eq!(v.len(), usize::MAX - 1);
     }
 
     #[test]
