@@ -1,5 +1,5 @@
 #![deny(missing_docs, rust_2018_idioms)]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::use_self)]
 #![allow(clippy::doc_markdown, clippy::many_single_char_names)]
 
 //! `ThinVec` is exactly the same as `Vec`, except that it stores its `len` and `capacity` in the buffer
@@ -491,8 +491,8 @@ impl<T> ThinVec<T> {
     ///
     /// This will not allocate.
     #[must_use]
-    pub fn new() -> ThinVec<T> {
-        ThinVec::with_capacity(0)
+    pub fn new() -> Self {
+        Self::with_capacity(0)
     }
 
     /// Constructs a new, empty `ThinVec<T>` with at least the specified capacity.
@@ -550,7 +550,7 @@ impl<T> ThinVec<T> {
     /// // assert_eq!(vec_units.capacity(), usize::MAX);
     /// ```
     #[must_use]
-    pub fn with_capacity(cap: usize) -> ThinVec<T> {
+    pub fn with_capacity(cap: usize) -> Self {
         // `padding` contains ~static assertions against types that are
         // incompatible with the current feature flags. We also call it to
         // invoke these assertions when getting a pointer to the `ThinVec`
@@ -562,13 +562,13 @@ impl<T> ThinVec<T> {
 
         if cap == 0 {
             unsafe {
-                ThinVec {
+                Self {
                     ptr: NonNull::new_unchecked(std::ptr::addr_of!(EMPTY_HEADER) as *mut _),
                     boo: PhantomData,
                 }
             }
         } else {
-            ThinVec {
+            Self {
                 ptr: header_with_capacity::<T>(cap),
                 boo: PhantomData,
             }
@@ -1192,7 +1192,7 @@ impl<T> ThinVec<T> {
         let new_cap = self.len();
         if new_cap < old_cap {
             if new_cap == 0 {
-                *self = ThinVec::new();
+                *self = Self::new();
             } else {
                 unsafe {
                     self.reallocate(new_cap);
@@ -1372,14 +1372,14 @@ impl<T> ThinVec<T> {
     /// assert_eq!(vec2, [2, 3]);
     /// ```
     #[allow(clippy::return_self_not_must_use)] // Mutates self
-    pub fn split_off(&mut self, at: usize) -> ThinVec<T> {
+    pub fn split_off(&mut self, at: usize) -> Self {
         let old_len = self.len();
         let new_vec_len = old_len - at;
 
         assert!(at <= old_len, "Index out of bounds");
 
         unsafe {
-            let mut new_vec = ThinVec::with_capacity(new_vec_len);
+            let mut new_vec = Self::with_capacity(new_vec_len);
 
             ptr::copy_nonoverlapping(self.data_raw().add(at), new_vec.data_raw(), new_vec_len);
 
@@ -1407,7 +1407,7 @@ impl<T> ThinVec<T> {
     /// assert_eq!(vec, [1, 2, 3, 4, 5, 6]);
     /// assert_eq!(vec2, []);
     /// ```
-    pub fn append(&mut self, other: &mut ThinVec<T>) {
+    pub fn append(&mut self, other: &mut Self) {
         self.extend(other.drain(..));
     }
 
@@ -1787,7 +1787,7 @@ where
     T: PartialOrd,
 {
     #[inline]
-    fn partial_cmp(&self, other: &ThinVec<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self[..].partial_cmp(&other[..])
     }
 }
@@ -1797,7 +1797,7 @@ where
     T: Ord,
 {
     #[inline]
-    fn cmp(&self, other: &ThinVec<T>) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self[..].cmp(&other[..])
     }
 }
@@ -1951,7 +1951,7 @@ where
     T: Clone,
 {
     #[inline]
-    fn clone(&self) -> ThinVec<T> {
+    fn clone(&self) -> Self {
         #[cold]
         #[inline(never)]
         fn clone_non_singleton<T: Clone>(this: &ThinVec<T>) -> ThinVec<T> {
@@ -1973,7 +1973,7 @@ where
         }
 
         if self.is_singleton() {
-            ThinVec::new()
+            Self::new()
         } else {
             clone_non_singleton(self)
         }
@@ -1981,15 +1981,15 @@ where
 }
 
 impl<T> Default for ThinVec<T> {
-    fn default() -> ThinVec<T> {
-        ThinVec::new()
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl<T> FromIterator<T> for ThinVec<T> {
     #[inline]
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> ThinVec<T> {
-        let mut vec = ThinVec::new();
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut vec = Self::new();
         vec.extend(iter);
         vec
     }
@@ -2005,7 +2005,7 @@ impl<T: Clone> From<&[T]> for ThinVec<T> {
     ///
     /// assert_eq!(ThinVec::from(&[1, 2, 3][..]), thin_vec![1, 2, 3]);
     /// ```
-    fn from(s: &[T]) -> ThinVec<T> {
+    fn from(s: &[T]) -> Self {
         s.iter().cloned().collect()
     }
 }
@@ -2021,7 +2021,7 @@ impl<T: Clone> From<&mut [T]> for ThinVec<T> {
     ///
     /// assert_eq!(ThinVec::from(&mut [1, 2, 3][..]), thin_vec![1, 2, 3]);
     /// ```
-    fn from(s: &mut [T]) -> ThinVec<T> {
+    fn from(s: &mut [T]) -> Self {
         s.iter().cloned().collect()
     }
 }
@@ -2036,7 +2036,7 @@ impl<T, const N: usize> From<[T; N]> for ThinVec<T> {
     ///
     /// assert_eq!(ThinVec::from([1, 2, 3]), thin_vec![1, 2, 3]);
     /// ```
-    fn from(s: [T; N]) -> ThinVec<T> {
+    fn from(s: [T; N]) -> Self {
         core::iter::IntoIterator::into_iter(s).collect()
     }
 }
@@ -2126,7 +2126,7 @@ impl From<&str> for ThinVec<u8> {
     ///
     /// assert_eq!(ThinVec::from("123"), thin_vec![b'1', b'2', b'3']);
     /// ```
-    fn from(s: &str) -> ThinVec<u8> {
+    fn from(s: &str) -> Self {
         From::from(s.as_bytes())
     }
 }
@@ -3448,7 +3448,7 @@ mod std_tests {
         struct BadElem(i32);
         impl Drop for BadElem {
             fn drop(&mut self) {
-                let BadElem(ref mut x) = *self;
+                let Self(ref mut x) = *self;
                 assert!(*x != PANIC_ON, "BadElem panic: 0xbadbeef");
             }
         }
